@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <link rel="stylesheet" href="style.css" />
+
+</head>
+
+<body>
+  <section class="section">
+    <h1 class="title">수학 공식 도우미</h1>ㄴ
+
+  </section>
+
+  <script class="jsbin" src="https://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+  <hr>
+  <div class="file-upload">
+    <div class="image-upload-wrap">
+      <input class="file-upload-input" type="file" onchange="readURL(this);" accept="image/*" />
+      <div class="drag-text">
+        <h3>잘 알지 못하는 수학 기호의 사진을 업로드해 주세요!!</h3>
+      </div>
+    </div>
+    <div class="file-upload-content">
+      <img class="file-upload-image" id="math-image" src="#" alt="your image" />
+
+
+      <div id="label-container"></div>
+      <div class="image-title-wrap">
+        <button type="button" onclick="removeUpload()" class="remove-image">
+          Remove <span class="image-title">Uploaded Image</span>
+        </button>
+      </div>
+
+      <hr>
+      <p class="result-message"></p>
+      <p class="result-message1"></p>
+      <p class="result-message2"></p>
+    </div>
+  </div>
+
+
+  <div id="label-container"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+  <script>
+    function readURL(input) {
+      if (input.files && input.files[0]) {
+        var reader = new FileReader();
+
+        reader.onload = function (e) {
+          $('.image-upload-wrap').hide();
+
+          $('.file-upload-image').attr('src', e.target.result);
+          $('.file-upload-content').show();
+
+          $('.image-title').html(input.files[0].name);
+        };
+
+        reader.readAsDataURL(input.files[0]);
+        init().then(function () {
+          console.log('hello');
+          predict();
+        });
+      } else {
+        removeUpload();
+      }
+    }
+
+    function removeUpload() {
+      $('.file-upload-input').replaceWith($('.file-upload-input').clone());
+      $('.file-upload-content').hide();
+      $('.image-upload-wrap').show();
+    }
+    $('.image-upload-wrap').bind('dragover', function () {
+      $('.image-upload-wrap').addClass('image-dropping');
+    });
+    $('.image-upload-wrap').bind('dragleave', function () {
+      $('.image-upload-wrap').removeClass('image-dropping');
+    });
+  </script>
+
+  <script type="text/javascript">
+    // More API functions here:
+    // https://github.com/googlecreativelab/teachablemachine-community/tree/master/libraries/image
+
+    // the link to your model provided by Teachable Machine export panel
+    const URL = 'https://teachablemachine.withgoogle.com/models/zvu_OfFly/';
+
+    let model, webcam, labelContainer, maxPredictions;
+
+    // Load the image model and setup the webcam
+    async function init() {
+      const modelURL = URL + 'model.json';
+      const metadataURL = URL + 'metadata.json';
+
+      // load the model and metadata
+      // Refer to tmImage.loadFromFiles() in the API to support files from a file picker
+      // or files from your local hard drive
+      // Note: the pose library adds "tmImage" object to your window (window.tmImage)
+      model = await tmImage.load(modelURL, metadataURL);
+      maxPredictions = model.getTotalClasses();
+
+      // Convenience function to setup a webcam
+
+      labelContainer = document.getElementById('label-container');
+      for (let i = 0; i < maxPredictions; i++) {
+        // and class labelss
+        labelContainer.appendChild(document.createElement('div'));
+      }
+    }
+
+    // run the webcam image through the image model
+    async function predict() {
+      // predict can take in an image, video or canvas html element
+      var image = document.getElementById('math-image');
+      const prediction = await model.predict(image, false);
+      prediction.sort((a, b) => parseFloat(b.probability) - parseFloat(a.probability));
+      console.log(prediction[0].className);
+      var resultMessage;
+      var resultTitle, resultExplain, resultCeleb;
+
+      switch (prediction[0].className) {
+        case "대문자 파이":
+          resultTitle = "∏ 파이(대문자) / 중복 순열의 기호"
+          resultExplain = "서로 다른 n개에서 중복을 허용하여 r개를 택하는 순열을 중복 순열이라고 하고, 이를 기호로 n∏r 와 같이 나타낸다"
+          resultCeleb = "관련 공식: nΠr=n^r"
+          break;
+
+        case "파이":
+          resultTitle = "π 파이(소문자)"
+          resultExplain = "파이는 원의 지름에 대한 원주의 비율을 뜻하며, 그 값은 약 3.14이다."
+          resultCeleb = ""
+          break;
+
+        case "교집합":
+          resultTitle = "∩ 교집합"
+          resultExplain = "두 집합 A와 B의 교집합 A ∩ B는 그 두 집합이 공통으로 포함하는 원소로 이루어진 집합이다."
+          resultCeleb = "A∩B＝B∩A (교환법칙) / A∩(B∩C)＝(A∩B)∩C (결합법칙) / A∩A＝A (멱등법칙) / A⊂B이면 A∩B＝A, A∩ø＝ø"
+          break;
+
+        case "소문자 시그마 / 표준편차 기호":
+          resultTitle = "σ 시그마(소문자)"
+          resultExplain = "자료가 많을 때 자료를 대표하는 하나의 값,즉 대푯값으로 평균을 많이 사용한다. 산포도의 하나인 표준편차는 자료가 평균을 중심으로 얼마나 퍼져 있는지를 나타내는 대표적인 수치이고, 이를 기호로 σ로 나타낸다"
+          resultCeleb = "관련 공식: V(X)=σ^2"
+          break;
+
+        case "팩토리얼":
+          resultTitle = "! 팩토리얼"
+          resultExplain = "팩토리얼은 그 수보다 작거나 같은 모든 양의 정수의 곱이다. "
+          resultCeleb = "관련 공식: n! = 1 X 2 X 3 X **** X (n-1) X n"
+          break;
+
+        case "인테그럴":
+          resultTitle = "∫ 적분"
+          resultExplain = "함수의 적분은 미적분학의 가장 중요한 연산 중의 하나로서 일변수 함수의 적분은 넓이와 부피를 계산하는 데 사용된다."
+          resultCeleb = ""
+          break;
+
+        case "루트":
+          resultTitle = "루트"
+          resultExplain = "실수 및 복소수 a에 대해, a의 제곱근은 제곱해서 a가 되는 모든 수를 의미한다."
+          resultCeleb = ""
+          break;
+
+        case "i":
+          resultTitle = "i 허수"
+          resultExplain = "허수는 실수가 아닌 복소수로 기호는 i를 사용한다"
+          resultCeleb = ""
+          break;
+
+        case "대문자 시그마":
+          resultTitle = "시그마(대)"
+          resultExplain = "∑는  합계, 또는 총계를 나타내는 기호이다."
+          resultCeleb = ""
+          break;
+
+        case "합집합":
+          resultTitle = "합집합"
+          resultExplain = "집합 A의 원소와 집합 B의 원소를 모두 합한 전체를 A와 B의 합집합이라 하며 A∪B 또는 A＋B로 나타낸다."
+          resultCeleb = "관련 공식: (A∪B=B∪A) / (A∪B)∪C=A∪(B∪C) / A∪Φ=A / A∪A=A / (A∩B)c＝Ac∪Bc "
+          break;
+
+        case "원소":
+          resultTitle = "원소"
+          resultExplain = "집합의 원소임을 나타내는 기호이다."
+          resultCeleb = "예시: a∈A / 집합 A의 원소 a"
+          break;
+
+        case "부분집합":
+          resultTitle = "⊃,⊂ 부분집합"
+          resultExplain = "두 집합 A, B에서 x∈B인 임의의 원소 x에 대하여 반드시 x∈A일 때, B를 A의 부분집합이라 한다. B⊂A 또는 A⊃B로 나타내며, 이것을 B는 A에 포함된다, 또는 A는 B를 포함한다고 한다."
+          resultCeleb = "관련 공식: 집합의 원소가 n개일 때, 부분집합은 총 2n개"
+          break;
+
+        case "편미분":
+          resultTitle = "미분"
+          resultExplain = "미분이란 어떤 운동이나 함수의 순간적인 움직임을 서술하는 방법이고, 어떤 함수의 미분이란 그것의 도함수를 도출해내는 과정을 말한다."
+          resultCeleb = ""
+          break;
+
+        default:
+          resultTitle = "알 수 없음"
+      }
+
+      $('.result-message').html(resultTitle);
+      $('.result-message1').html(resultExplain);
+      $('.result-message2').html(resultCeleb);
+
+
+
+      for (let i = 0; i < maxPredictions; i++) {
+        const classPrediction =
+
+          labelContainer.childNodes[i].innerHTML = classPrediction;
+      }
+    }
+  </script>
+</body>
+<!-- Copyright (c) 2023 by Aaron Vanston (https://codepen.io/aaronvanston/pen/yNYOXR) -->
+
+</html>
